@@ -21,3 +21,10 @@ https://statso.io/credit-score-classification-case-study/
 ## Model
 
 https://drive.google.com/file/d/1ZINWXv8Hj5QdiSUkzVlb17lAHM9geA87/view?usp=sharing
+
+## Docker 
+
+```bash
+docker build -t streamlit .
+docker run -p 8501:8501 streamlit
+```
