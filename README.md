@@ -16,3 +16,8 @@ https://streamlit-example-app-interactive-table-streamlit-app-mt9qg6.streamlit.a
 ## Data Source
 
 https://statso.io/credit-score-classification-case-study/
+
+
+## Model
+
+https://drive.google.com/file/d/1ZINWXv8Hj5QdiSUkzVlb17lAHM9geA87/view?usp=sharing
