@@ -11,9 +11,14 @@ RUN apt-get update && apt-get install -y \
     git \
     && rm -rf /var/lib/apt/lists/*
 
-RUN git clone https://github.com/KuiMing/credit_score_app.git .
+# RUN git clone https://github.com/KuiMing/credit_score_app.git .
 
+COPY streamlit_app.py .
+COPY requirements.txt .
 RUN pip3 install -r requirements.txt
+
+COPY model.pkl .
+COPY train.csv .
 
 EXPOSE 8501
 
