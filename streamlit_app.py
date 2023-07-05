@@ -108,7 +108,7 @@ test_data = pd.DataFrame(
 )
 
 with cola:
-    data = pd.read_csv("/Users/chenkuiming/Downloads/Credit_score/train.csv", nrows=10)
+    data = pd.read_csv("train.csv", nrows=10)
     data = data[cols]
 
     data["Credit_Mix"] = data["Credit_Mix"].map({"Standard": 1, "Good": 2, "Bad": 0})
