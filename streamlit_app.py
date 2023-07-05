@@ -19,8 +19,6 @@ import shap
 
 """
 
-st.info("This is a purely informational message", icon="ℹ️")
-
 
 cola, colb = st.columns([2, 1])
 
@@ -41,9 +39,7 @@ def aggrid_interactive_table(df: pd.DataFrame):
     options.configure_side_bar()
 
     options.configure_selection("single")
-    options.configure_pagination(
-        enabled=True, paginationAutoPageSize=True, paginationPageSize=10
-    )
+
     selection = AgGrid(
         df,
         enable_enterprise_modules=True,
@@ -51,6 +47,7 @@ def aggrid_interactive_table(df: pd.DataFrame):
         # theme="dark",
         update_mode=GridUpdateMode.MODEL_CHANGED,
         allow_unsafe_jscode=True,
+        height=350,
     )
 
     return selection
@@ -110,7 +107,7 @@ test_data = pd.DataFrame(
 )
 
 with cola:
-    data = pd.read_csv("train.csv", nrows=10)
+    data = pd.read_csv("train.csv", nrows=30)
     data = data[cols]
 
     data["Credit_Mix"] = data["Credit_Mix"].map({"Standard": 1, "Good": 2, "Bad": 0})
@@ -180,11 +177,18 @@ with col2:
     try:
         # Compute SHAP values for the random person
         shap_values = explainer.shap_values(test_data)
+        test_df = pd.DataFrame(
+            {
+                "factor": test_data.columns,
+                "importance": shap_values[list(model.classes_).index(score)][0],
+            }
+        )
+        test_df.sort_values(by="importance", inplace=True)
         fig = []
         fig.append(
             go.Bar(
-                y=test_data.columns,
-                x=shap_values[list(model.classes_).index(score)][0],
+                y=test_df.factor,
+                x=test_df.importance,
                 name=score,
                 orientation="h",
             )
