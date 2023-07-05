@@ -11,7 +11,7 @@ RUN apt-get update && apt-get install -y \
     git \
     && rm -rf /var/lib/apt/lists/*
 
-RUN git clone git@github.com:KuiMing/credit_score_app.git .
+RUN git clone https://github.com/KuiMing/credit_score_app.git .
 
 RUN pip3 install -r requirements.txt
 
