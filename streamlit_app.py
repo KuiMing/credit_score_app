@@ -56,6 +56,8 @@ def aggrid_interactive_table(df: pd.DataFrame):
     return selection
 
 
+credit = dict(Good="低", Standard="中", Poor="高")
+
 with open("model.pkl", "rb") as f:
     model = pickle.load(f)
 f.close()
@@ -148,15 +150,15 @@ with colb:
         score = model.predict(test_data.reshape(1, -1))[0]
         test_data = pd.DataFrame(test_data.reshape(1, -1), columns=data.columns)
     except:
-        score = "Good"
+        score = "Poor"
     st.markdown(
         """
     {1}
     <div class="container">
-        <h1 class="vertical-center" style='text-align: center; color: grey;'>Credit Score: {0}</h1>
+        <h1 class="vertical-center" style='text-align: center; color: grey;'>信用風險: {0}</h1>
     </div>
     """.format(
-            score, style
+            credit[score], style
         ),
         unsafe_allow_html=True,
     )
@@ -178,7 +180,6 @@ with col2:
     try:
         # Compute SHAP values for the random person
         shap_values = explainer.shap_values(test_data)
-        print(shap_values[1][0])
         fig = []
         fig.append(
             go.Bar(
