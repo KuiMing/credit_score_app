@@ -2,7 +2,6 @@ altair
 pandas
 streamlit
 streamlit-aggrid
-plotly
 shap
 numpy==1.23.0
 scikit-learn==1.2.0
