@@ -30,6 +30,8 @@ col_translate = {
     "Outstanding_Debt": "未償債務",
     "Credit_History_Age": "信用紀錄月數",
     "Monthly_Balance": "每月結餘",
+    "Occupation": "職業",
+    "Payment_Behaviour": "付款行為",
 }
 
 predict_col = [
@@ -41,11 +43,19 @@ predict_col = [
     "Interest_Rate",
     "Delay_from_due_date",
     "Num_of_Delayed_Payment",
-    "Credit_Mix",
+    # "Credit_Mix",
     "Outstanding_Debt",
     "Credit_History_Age",
     "Monthly_Balance",
 ]
+behavior = {
+    "High_spent_Small_value_payments": "低單價高頻消費",
+    "Low_spent_Large_value_payments": "高單價低頻消費",
+    "Low_spent_Medium_value_payments": "中單價低頻消費",
+    "Low_spent_Small_value_payments": "低單價低頻消費",
+    "High_spent_Medium_value_payments": "中單價高頻消費",
+    "High_spent_Large_value_payments": "高單價高頻消費",
+}
 
 
 def aggrid_interactive_table(df: pd.DataFrame):
@@ -120,9 +130,9 @@ with credit_score_view:
             data["Customer_ID"] == selected_user_id, predict_col
         ].head(1)
         predict_data = selected_data.copy()
-        predict_data["Credit_Mix"] = predict_data["Credit_Mix"].map(
-            {"Standard": 1, "Good": 2, "Bad": 0}
-        )
+        # predict_data["Credit_Mix"] = predict_data["Credit_Mix"].map(
+        #     {"Standard": 1, "Good": 2, "Bad": 0}
+        # )
         score = model.predict(predict_data.to_numpy())[0]
     # selected_data = pd.DataFrame(selected_data.reshape(1, -1), columns=data.columns
     except:
@@ -145,6 +155,15 @@ user_detail, score_sorting = st.columns([1, 3])
 with user_detail:
     try:
         text = "#### 該客戶的財務相關資訊：\n"
+        occupation = data.loc[
+            data["Customer_ID"] == selected_user_id, "Occupation"
+        ].values[0]
+
+        text += f"- 職業: {occupation}\n"
+        Payment_Behaviour = data.loc[
+            data["Customer_ID"] == selected_user_id, "Payment_Behaviour"
+        ].values[0]
+        text += f"- 消費習慣: {behavior[Payment_Behaviour]}\n"
         selected_data.columns = [col_translate[col] for col in selected_data.columns]
         for i in selected_data.columns:
             text += f"- {i}: {selected_data[i].values[0]}\n"
