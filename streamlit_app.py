@@ -89,6 +89,9 @@ with table_view:
             "Monthly_Balance",
         ]
     ]
+    table_data["Annual_Income"] *= 30
+    table_data["Outstanding_Debt"] *= 30
+    table_data["Monthly_Balance"] *= 30
     table_data = (
         table_data.groupby(["Customer_ID", "Name", "Gender"])
         .mean()
@@ -164,9 +167,13 @@ with user_detail:
             data["Customer_ID"] == selected_user_id, "Payment_Behaviour"
         ].values[0]
         text += f"- 消費習慣: {behavior[Payment_Behaviour]}\n"
+        selected_data["Annual_Income"] *= 30
+        selected_data["Outstanding_Debt"] *= 30
+        selected_data["Monthly_Balance"] *= 30
+        selected_data["Monthly_Inhand_Salary"] *= 30
         selected_data.columns = [col_translate[col] for col in selected_data.columns]
         for i in selected_data.columns:
-            text += f"- {i}: {selected_data[i].values[0]}\n"
+            text += f"- {i}: {int(selected_data[i].values[0])}\n"
         st.markdown(text)
     except:
         pass
