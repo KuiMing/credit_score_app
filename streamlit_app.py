@@ -8,16 +8,16 @@ import shap
 st.set_page_config(layout="wide")
 
 data = pd.read_csv("train.csv")
-data["Gender"] = data["Name"].apply(lambda n: 'Male' if hash(n)%2==0 else 'Female')
+data["Gender"] = data["Name"].apply(lambda n: "Male" if hash(n) % 2 == 0 else "Female")
 
 with open("model.pkl", "rb") as f:
     model = pickle.load(f)
 f.close()
 col_translate = {
-    "Customer_ID":"客戶編號",
-    "Name":"姓名",
-    "Gender":"性別",
-    "Age":"年齡",
+    "Customer_ID": "客戶編號",
+    "Name": "姓名",
+    "Gender": "性別",
+    "Age": "年齡",
     "Annual_Income": "年薪",
     "Monthly_Inhand_Salary": "月薪",
     "Num_Bank_Accounts": "銀行帳戶數",
@@ -47,6 +47,7 @@ predict_col = [
     "Monthly_Balance",
 ]
 
+
 def aggrid_interactive_table(df: pd.DataFrame):
     options = GridOptionsBuilder.from_dataframe(
         df, enableRowGroup=True, enableValue=True, enablePivot=True
@@ -63,14 +64,29 @@ def aggrid_interactive_table(df: pd.DataFrame):
     )
     return selection
 
+
 table_view, credit_score_view = st.columns([2, 1])
 
 with table_view:
-    
-    table_data = data[["Customer_ID","Name","Gender","Age","Annual_Income","Outstanding_Debt","Monthly_Balance"]]
-    table_data = table_data.groupby(["Customer_ID","Name","Gender"]).mean().reset_index().round()
+    table_data = data[
+        [
+            "Customer_ID",
+            "Name",
+            "Gender",
+            "Age",
+            "Annual_Income",
+            "Outstanding_Debt",
+            "Monthly_Balance",
+        ]
+    ]
+    table_data = (
+        table_data.groupby(["Customer_ID", "Name", "Gender"])
+        .mean()
+        .reset_index()
+        .round()
+    )
     table_data.columns = [col_translate[col] for col in table_data.columns]
-    
+
     selection = aggrid_interactive_table(df=table_data)
     # if selection:
     #     st.write("You selected:")
@@ -78,7 +94,6 @@ with table_view:
     #         st.json(dict(Name=selection["selected_rows"][0]["Name"]))
     #     except:
     #         st.json([])
-
 
 
 with credit_score_view:
@@ -101,9 +116,13 @@ with credit_score_view:
     credit = dict(Good="低", Standard="中", Poor="高", Not_Selected="<br>請選擇一名客戶")
     try:
         selected_user_id = selection["selected_rows"][0]["客戶編號"]
-        selected_data = data.loc[data['Customer_ID'] == selected_user_id,predict_col].head(1)
+        selected_data = data.loc[
+            data["Customer_ID"] == selected_user_id, predict_col
+        ].head(1)
         predict_data = selected_data.copy()
-        predict_data["Credit_Mix"] = predict_data["Credit_Mix"].map({"Standard": 1, "Good": 2, "Bad": 0})
+        predict_data["Credit_Mix"] = predict_data["Credit_Mix"].map(
+            {"Standard": 1, "Good": 2, "Bad": 0}
+        )
         score = model.predict(predict_data.to_numpy())[0]
     # selected_data = pd.DataFrame(selected_data.reshape(1, -1), columns=data.columns
     except:
@@ -149,12 +168,32 @@ with score_sorting:
             }
         )
 
-        c = alt.Chart(selected_factor, mark='bar').encode(
-            x=alt.X('factor', sort=alt.EncodingSortField(field='importance', order='descending')), 
-            y='importance',
-            tooltip=['factor', 'importance','value']
-            ).configure_axisX(labelAngle=0)
-        st.markdown("#### 影響信用風險的因子佔比")
+        c = (
+            alt.Chart(selected_factor)
+            .transform_calculate(
+                abs_importance="abs(datum.importance)",  # 計算絕對值
+                sign="datum.importance >= 0",  # 判斷正負
+            )
+            .mark_bar()
+            .encode(
+                y=alt.Y(
+                    "factor",
+                    sort=alt.EncodingSortField(field="importance", order="descending"),
+                    title=None,
+                ),
+                x=alt.X("abs_importance:Q", title=None),
+                color=alt.condition(
+                    "datum.sign",  # 以 sign 作為條件判斷
+                    alt.value("blue"),  # 如果是正值，以藍色表示
+                    alt.value("red"),  # 如果是負值，以紅色表示
+                ),
+                tooltip=["factor", "importance", "value"],
+            )
+            .configure_axis(labelFontSize=15)  # 改變軸標籤字體大小
+            .properties(height=450)  # 改變圖的高度
+        )
+
+        st.markdown("#### 影響信用風險的因子佔比：**:blue[正面影響]** **:red[負面影響]**")
         st.altair_chart(c, use_container_width=True)
     except:
         pass
