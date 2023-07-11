@@ -15,8 +15,8 @@ https://streamlit-example-app-interactive-table-streamlit-app-mt9qg6.streamlit.a
 
 ## Data Source
 
-https://statso.io/credit-score-classification-case-study/
-
+Raw data: https://statso.io/credit-score-classification-case-study/
+Names and gender: https://drive.google.com/file/d/1cA4bdzPBC18IIWeD7JKbIFqQg4NxoYjW/view?usp=sharing
 
 ## Model
 
