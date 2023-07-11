@@ -8,7 +8,7 @@ import shap
 st.set_page_config(layout="wide")
 
 data = pd.read_csv("train.csv")
-data["Gender"] = data["Name"].apply(lambda n: "Male" if hash(n) % 2 == 0 else "Female")
+name_gender = pd.read_csv("name_gender.csv")
 
 with open("model.pkl", "rb") as f:
     model = pickle.load(f)
@@ -100,7 +100,6 @@ with table_view:
         [
             "Customer_ID",
             "Name",
-            "Gender",
             "Age",
             "Annual_Income",
             "Outstanding_Debt",
@@ -111,11 +110,10 @@ with table_view:
     table_data["Outstanding_Debt"] *= 30
     table_data["Monthly_Balance"] *= 30
     table_data = (
-        table_data.groupby(["Customer_ID", "Name", "Gender"])
-        .mean()
-        .reset_index()
-        .round()
+        table_data.groupby(["Customer_ID", "Name"]).mean().reset_index().round()
     )
+    table_data["Name"] = name_gender["Name"]
+    table_data["Gender"] = name_gender["Gender"]
     table_data.columns = [col_translate[col] for col in table_data.columns]
 
     selection = aggrid_interactive_table(df=table_data)
