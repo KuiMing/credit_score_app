@@ -143,6 +143,9 @@ with credit_score_view:
     </style>
     """
     credit = dict(Good="低", Standard="中", Poor="高", Not_Selected="<br>請選擇一名客戶")
+    color = dict(
+        Good="#6E94F3", Standard="#FD895F", Poor="#F1616D", Not_Selected="<br>grey"
+    )
     try:
         selected_user_id = selection["selected_rows"][0]["客戶編號"]
         selected_data = data.loc[
@@ -160,10 +163,10 @@ with credit_score_view:
         """
     {1}
     <div class="container">
-        <h1 class="vertical-center" style='text-align: center; color: grey;'>信用風險: {0}</h1>
+        <h1 class="vertical-center" style='text-align: center; color: grey;'>信用風險:<font style='color: {2};'> {0}</font></h1>
     </div>
     """.format(
-            credit[score], style
+            credit[score], style, color[score]
         ),
         unsafe_allow_html=True,
     )
@@ -226,8 +229,8 @@ with score_sorting:
                 x=alt.X("abs_importance:Q", title=None),
                 color=alt.condition(
                     "datum.sign",  # 以 sign 作為條件判斷
-                    alt.value("blue"),  # 如果是正值，以藍色表示
-                    alt.value("red"),  # 如果是負值，以紅色表示
+                    alt.value("#6E94F3"),  # 如果是正值，以藍色表示
+                    alt.value("#F1616D"),  # 如果是負值，以紅色表示
                 ),
                 tooltip=["factor", "importance", "value"],
             )
@@ -235,7 +238,13 @@ with score_sorting:
             .properties(height=450)  # 改變圖的高度
         )
 
-        st.markdown("#### 影響信用風險的因子佔比：**:blue[正面影響]** **:red[負面影響]**")
+        # st.markdown("#### 影響信用風險的因子佔比：**:blue[正面影響]** **:red[負面影響]**")#E5765C
+        st.markdown(
+            """            
+            <h4> 影響信用風險的因子佔比：<font style="color: #6E94F3;">正面影響</font> <font style="color: #F1616D;">負面影響</font></h4>
+            """,
+            unsafe_allow_html=True,
+        )
         st.altair_chart(c, use_container_width=True)
     except:
         pass
