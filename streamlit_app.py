@@ -157,6 +157,51 @@ def display_user_detail(selection, data, col_translate):
     st.markdown(text)
 
 
+def display_shap_sorting(selected_data, model, score):
+    predict_data = selected_data.copy()
+    explainer = shap.TreeExplainer(model)
+    shap_values = explainer.shap_values(predict_data)
+    selected_factor = pd.DataFrame(
+        {
+            "factor": selected_data.columns,
+            "importance": shap_values[list(model.classes_).index(score)][0],
+            "value": selected_data.values[0],
+        }
+    )
+
+    c = (
+        alt.Chart(selected_factor)
+        .transform_calculate(
+            abs_importance="abs(datum.importance)",  # 計算絕對值
+            sign="datum.importance >= 0",  # 判斷正負
+        )
+        .mark_bar()
+        .encode(
+            y=alt.Y(
+                "factor",
+                sort=alt.EncodingSortField(field="importance", order="descending"),
+                title=None,
+            ),
+            x=alt.X("abs_importance:Q", title=None),
+            color=alt.condition(
+                "datum.sign",  # 以 sign 作為條件判斷
+                alt.value("#6E94F3"),  # 如果是正值，以藍色表示
+                alt.value("#F1616D"),  # 如果是負值，以紅色表示
+            ),
+            tooltip=["factor", "importance", "value"],
+        )
+        .configure_axis(labelFontSize=15)  # 改變軸標籤字體大小
+        .properties(height=450)  # 改變圖的高度
+    )
+    st.markdown(
+        """            
+        <h4> 影響信用風險的因子佔比：<font style="color: #6E94F3;">正面影響</font> <font style="color: #F1616D;">負面影響</font></h4>
+        """,
+        unsafe_allow_html=True,
+    )
+    st.altair_chart(c, use_container_width=True)
+
+
 table_view, credit_score_view = st.columns([2, 1])
 
 with table_view:
@@ -208,50 +253,5 @@ shap.initjs()
 explainer = shap.TreeExplainer(model)
 
 with score_sorting:
-    try:
-        # Compute SHAP values for the random person
-        predict_data = selected_data.copy()
-        shap_values = explainer.shap_values(predict_data)
-        selected_factor = pd.DataFrame(
-            {
-                "factor": selected_data.columns,
-                "importance": shap_values[list(model.classes_).index(score)][0],
-                "value": selected_data.values[0],
-            }
-        )
-
-        c = (
-            alt.Chart(selected_factor)
-            .transform_calculate(
-                abs_importance="abs(datum.importance)",  # 計算絕對值
-                sign="datum.importance >= 0",  # 判斷正負
-            )
-            .mark_bar()
-            .encode(
-                y=alt.Y(
-                    "factor",
-                    sort=alt.EncodingSortField(field="importance", order="descending"),
-                    title=None,
-                ),
-                x=alt.X("abs_importance:Q", title=None),
-                color=alt.condition(
-                    "datum.sign",  # 以 sign 作為條件判斷
-                    alt.value("#6E94F3"),  # 如果是正值，以藍色表示
-                    alt.value("#F1616D"),  # 如果是負值，以紅色表示
-                ),
-                tooltip=["factor", "importance", "value"],
-            )
-            .configure_axis(labelFontSize=15)  # 改變軸標籤字體大小
-            .properties(height=450)  # 改變圖的高度
-        )
-
-        # st.markdown("#### 影響信用風險的因子佔比：**:blue[正面影響]** **:red[負面影響]**")#E5765C
-        st.markdown(
-            """            
-            <h4> 影響信用風險的因子佔比：<font style="color: #6E94F3;">正面影響</font> <font style="color: #F1616D;">負面影響</font></h4>
-            """,
-            unsafe_allow_html=True,
-        )
-        st.altair_chart(c, use_container_width=True)
-    except:
-        pass
+    if selection.selected_rows != []:
+        display_shap_sorting(selected_data, model, score)
