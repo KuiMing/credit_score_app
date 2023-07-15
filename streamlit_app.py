@@ -13,6 +13,21 @@ name_gender = pd.read_csv("name_gender.csv")
 with open("model.pkl", "rb") as f:
     model = pickle.load(f)
 f.close()
+
+predict_col = [
+    "Annual_Income",
+    "Monthly_Inhand_Salary",
+    "Num_Bank_Accounts",
+    "Num_Credit_Card",
+    "Num_of_Loan",
+    "Interest_Rate",
+    "Delay_from_due_date",
+    "Num_of_Delayed_Payment",
+    # "Credit_Mix",
+    "Outstanding_Debt",
+    "Credit_History_Age",
+    "Monthly_Balance",
+]
 col_translate = {
     "Customer_ID": "客戶編號",
     "Name": "姓名",
@@ -32,47 +47,6 @@ col_translate = {
     "Monthly_Balance": "每月結餘",
     "Occupation": "職業",
     "Payment_Behaviour": "付款行為",
-}
-
-predict_col = [
-    "Annual_Income",
-    "Monthly_Inhand_Salary",
-    "Num_Bank_Accounts",
-    "Num_Credit_Card",
-    "Num_of_Loan",
-    "Interest_Rate",
-    "Delay_from_due_date",
-    "Num_of_Delayed_Payment",
-    # "Credit_Mix",
-    "Outstanding_Debt",
-    "Credit_History_Age",
-    "Monthly_Balance",
-]
-behavior = {
-    "High_spent_Small_value_payments": "低單價高頻消費",
-    "Low_spent_Large_value_payments": "高單價低頻消費",
-    "Low_spent_Medium_value_payments": "中單價低頻消費",
-    "Low_spent_Small_value_payments": "低單價低頻消費",
-    "High_spent_Medium_value_payments": "中單價高頻消費",
-    "High_spent_Large_value_payments": "高單價高頻消費",
-}
-
-career = {
-    "Scientist": "科學家",
-    "Teacher": "老師",
-    "Engineer": "工程師",
-    "Entrepreneur": "企業家",
-    "Developer": "軟體工程師",
-    "Lawyer": "律師",
-    "Media_Manager": "媒體經理",
-    "Doctor": "醫生",
-    "Journalist": "記者",
-    "Manager": "經理",
-    "Accountant": "會計師",
-    "Musician": "音樂家",
-    "Mechanic": "技工",
-    "Writer": "作家",
-    "Architect": "建築師",
 }
 
 
@@ -132,7 +106,34 @@ def display_credit_score_view(score, credit, color):
     )
 
 
-def display_user_detail(selection, data, career, behavior, col_translate):
+def display_user_detail(selection, data, col_translate):
+    behavior = {
+        "High_spent_Small_value_payments": "低單價高頻消費",
+        "Low_spent_Large_value_payments": "高單價低頻消費",
+        "Low_spent_Medium_value_payments": "中單價低頻消費",
+        "Low_spent_Small_value_payments": "低單價低頻消費",
+        "High_spent_Medium_value_payments": "中單價高頻消費",
+        "High_spent_Large_value_payments": "高單價高頻消費",
+    }
+
+    career = {
+        "Scientist": "科學家",
+        "Teacher": "老師",
+        "Engineer": "工程師",
+        "Entrepreneur": "企業家",
+        "Developer": "軟體工程師",
+        "Lawyer": "律師",
+        "Media_Manager": "媒體經理",
+        "Doctor": "醫生",
+        "Journalist": "記者",
+        "Manager": "經理",
+        "Accountant": "會計師",
+        "Musician": "音樂家",
+        "Mechanic": "技工",
+        "Writer": "作家",
+        "Architect": "建築師",
+    }
+
     selected_user_id = selection["selected_rows"][0]["客戶編號"]
     text = "#### 該客戶的財務相關資訊：\n"
     occupation = data.loc[data["Customer_ID"] == selected_user_id, "Occupation"].values[
@@ -199,28 +200,8 @@ with credit_score_view:
 user_detail, score_sorting = st.columns([1, 3])
 
 with user_detail:
-    try:
-        selected_user_id = selection["selected_rows"][0]["客戶編號"]
-        text = "#### 該客戶的財務相關資訊：\n"
-        occupation = data.loc[
-            data["Customer_ID"] == selected_user_id, "Occupation"
-        ].values[0]
-
-        text += f"- 職業: {career[occupation]}\n"
-        Payment_Behaviour = data.loc[
-            data["Customer_ID"] == selected_user_id, "Payment_Behaviour"
-        ].values[0]
-        text += f"- 消費習慣: {behavior[Payment_Behaviour]}\n"
-        selected_data["Annual_Income"] *= 30
-        selected_data["Outstanding_Debt"] *= 30
-        selected_data["Monthly_Balance"] *= 30
-        selected_data["Monthly_Inhand_Salary"] *= 30
-        selected_data.columns = [col_translate[col] for col in selected_data.columns]
-        for i in selected_data.columns:
-            text += f"- {i}: {int(selected_data[i].values[0])}\n"
-        st.markdown(text)
-    except:
-        pass
+    if selection.selected_rows != []:
+        display_user_detail(selection, data, col_translate)
 
 
 shap.initjs()
