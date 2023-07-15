@@ -51,7 +51,7 @@ class CreditPredictor:
             Good="#6E94F3", Standard="#FD895F", Poor="#F1616D", Not_Selected="<br>grey"
         )
 
-    def process_table_data(self):
+    def process_table_data(self) -> pd.DataFrame:
         table_data = self.data[
             [
                 "Customer_ID",
@@ -73,7 +73,7 @@ class CreditPredictor:
         table_data.columns = [self.col_translate[col] for col in table_data.columns]
         return table_data
 
-    def aggrid_interactive_table(self, df: pd.DataFrame):
+    def aggrid_interactive_table(self, df: pd.DataFrame) -> AgGridReturn:
         options = GridOptionsBuilder.from_dataframe(
             df, enableRowGroup=True, enableValue=True, enablePivot=True
         )
@@ -89,7 +89,9 @@ class CreditPredictor:
         )
         return selection
 
-    def get_selected_data_and_score(self, selection: AgGridReturn):
+    def get_selected_data_and_score(
+        self, selection: AgGridReturn
+    ) -> tuple([pd.DataFrame, str]):
         selected_user_id = selection["selected_rows"][0]["客戶編號"]
         selected_data = self.data.loc[
             self.data["Customer_ID"] == selected_user_id, self.predict_col
@@ -98,7 +100,7 @@ class CreditPredictor:
         score = self.model.predict(predict_data.to_numpy())[0]
         return selected_data, score
 
-    def display_credit_score_view(self, score: str):
+    def display_credit_score_view(self, score: str) -> None:
         style = """
         <style>
             .container { 
@@ -126,7 +128,7 @@ class CreditPredictor:
             unsafe_allow_html=True,
         )
 
-    def display_user_detail(self, selection: AgGridReturn):
+    def display_user_detail(self, selection: AgGridReturn) -> None:
         behavior = {
             "High_spent_Small_value_payments": "低單價高頻消費",
             "Low_spent_Large_value_payments": "高單價低頻消費",
@@ -178,7 +180,9 @@ class CreditPredictor:
             text += f"- {i}: {int(selected_data[i].values[0])}\n"
         st.markdown(text)
 
-    def display_credit_risk_factor_chart(self, selected_data: pd.DataFrame, score: str):
+    def display_credit_risk_factor_chart(
+        self, selected_data: pd.DataFrame, score: str
+    ) -> None:
         predict_data = selected_data.copy()
 
         shap_values = self.explainer.shap_values(predict_data)
@@ -223,7 +227,7 @@ class CreditPredictor:
         st.altair_chart(chart, use_container_width=True)
 
 
-def main():
+def main() -> None:
     predictor = CreditPredictor("train.csv", "model.pkl", "name_gender.csv")
 
     st.set_page_config(layout="wide")
