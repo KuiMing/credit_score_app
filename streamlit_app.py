@@ -93,6 +93,69 @@ def aggrid_interactive_table(df: pd.DataFrame):
     return selection
 
 
+def get_selected_data_and_score(selection, data, predict_col, model):
+    selected_user_id = selection["selected_rows"][0]["客戶編號"]
+    selected_data = data.loc[data["Customer_ID"] == selected_user_id, predict_col].head(
+        1
+    )
+    predict_data = selected_data.copy()
+    score = model.predict(predict_data.to_numpy())[0]
+    return selected_data, score
+
+
+def display_credit_score_view(score, credit, color):
+    style = """
+    <style>
+        .container { 
+        height: 400px;
+        position: relative;
+        }
+
+        .vertical-center {
+        margin: 0;
+        position: absolute;
+        top: 50%;
+        -ms-transform: translateY(-50%);
+        transform: translateY(-50%);
+        }
+    </style>
+    """
+    st.markdown(
+        f"""
+    {style}
+    <div class="container">
+        <h1 class="vertical-center" style='text-align: center; color: grey;'>
+        信用風險:<font style='color: {color[score]};'> {credit[score]}</font></h1>
+    </div>
+    """,
+        unsafe_allow_html=True,
+    )
+
+
+def display_user_detail(selection, data, career, behavior, col_translate):
+    selected_user_id = selection["selected_rows"][0]["客戶編號"]
+    text = "#### 該客戶的財務相關資訊：\n"
+    occupation = data.loc[data["Customer_ID"] == selected_user_id, "Occupation"].values[
+        0
+    ]
+    text += f"- 職業: {career[occupation]}\n"
+    Payment_Behaviour = data.loc[
+        data["Customer_ID"] == selected_user_id, "Payment_Behaviour"
+    ].values[0]
+    text += f"- 消費習慣: {behavior[Payment_Behaviour]}\n"
+    selected_data = data.loc[data["Customer_ID"] == selected_user_id, predict_col].head(
+        1
+    )
+    selected_data["Annual_Income"] *= 30
+    selected_data["Outstanding_Debt"] *= 30
+    selected_data["Monthly_Balance"] *= 30
+    selected_data["Monthly_Inhand_Salary"] *= 30
+    selected_data.columns = [col_translate[col] for col in selected_data.columns]
+    for i in selected_data.columns:
+        text += f"- {i}: {int(selected_data[i].values[0])}\n"
+    st.markdown(text)
+
+
 table_view, credit_score_view = st.columns([2, 1])
 
 with table_view:
@@ -117,65 +180,27 @@ with table_view:
     table_data.columns = [col_translate[col] for col in table_data.columns]
 
     selection = aggrid_interactive_table(df=table_data)
-    # if selection:
-    #     st.write("You selected:")
-    #     try:
-    #         st.json(dict(Name=selection["selected_rows"][0]["Name"]))
-    #     except:
-    #         st.json([])
 
 
 with credit_score_view:
-    style = """
-    <style>
-        .container { 
-        height: 400px;
-        position: relative;
-        }
-
-        .vertical-center {
-        margin: 0;
-        position: absolute;
-        top: 50%;
-        -ms-transform: translateY(-50%);
-        transform: translateY(-50%);
-        }
-    </style>
-    """
     credit = dict(Good="低", Standard="中", Poor="高", Not_Selected="<br>請選擇一名客戶")
     color = dict(
         Good="#6E94F3", Standard="#FD895F", Poor="#F1616D", Not_Selected="<br>grey"
     )
-    try:
-        selected_user_id = selection["selected_rows"][0]["客戶編號"]
-        selected_data = data.loc[
-            data["Customer_ID"] == selected_user_id, predict_col
-        ].head(1)
-        predict_data = selected_data.copy()
-        # predict_data["Credit_Mix"] = predict_data["Credit_Mix"].map(
-        #     {"Standard": 1, "Good": 2, "Bad": 0}
-        # )
-        score = model.predict(predict_data.to_numpy())[0]
-    # selected_data = pd.DataFrame(selected_data.reshape(1, -1), columns=data.columns
-    except:
+    if selection.selected_rows != []:
+        selected_data, score = get_selected_data_and_score(
+            selection, data, predict_col, model
+        )
+    else:
         score = "Not_Selected"
-    st.markdown(
-        """
-    {1}
-    <div class="container">
-        <h1 class="vertical-center" style='text-align: center; color: grey;'>信用風險:<font style='color: {2};'> {0}</font></h1>
-    </div>
-    """.format(
-            credit[score], style, color[score]
-        ),
-        unsafe_allow_html=True,
-    )
 
-# st.markdown("---")
+    display_credit_score_view(score, credit, color)
+
 user_detail, score_sorting = st.columns([1, 3])
 
 with user_detail:
     try:
+        selected_user_id = selection["selected_rows"][0]["客戶編號"]
         text = "#### 該客戶的財務相關資訊：\n"
         occupation = data.loc[
             data["Customer_ID"] == selected_user_id, "Occupation"
@@ -204,6 +229,7 @@ explainer = shap.TreeExplainer(model)
 with score_sorting:
     try:
         # Compute SHAP values for the random person
+        predict_data = selected_data.copy()
         shap_values = explainer.shap_values(predict_data)
         selected_factor = pd.DataFrame(
             {
