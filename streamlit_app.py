@@ -51,6 +51,7 @@ class CreditPredictor:
             Good="#6E94F3", Standard="#FD895F", Poor="#F1616D", Not_Selected="<br>grey"
         )
 
+
     def process_table_data(self) -> pd.DataFrame:
         table_data = self.data[
             [
@@ -86,6 +87,9 @@ class CreditPredictor:
             suppressColumnVirtualisation=True,
             allow_unsafe_jscode=True,
             height=350,
+            custom_css={
+                "#gridToolBar .ag-row-odd": {"background-color": "#F1F1F1"},
+            },
         )
         return selection
 
