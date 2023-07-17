@@ -33,7 +33,6 @@ class CreditPredictor:
         "Num_of_Loan": "貸款數量",
         "Delay_from_due_date": "延遲還款天數",
         "Num_of_Delayed_Payment": "延遲還款數量",
-        "Credit_Mix": "混合信用分數",
         "Outstanding_Debt": "未償債務",
         "Credit_History_Age": "信用紀錄月數",
         "Monthly_Balance": "每月結餘",
@@ -42,35 +41,13 @@ class CreditPredictor:
     }
 
     def __init__(self, data_file: str, model_file: str, name_gender_file: str):
-        self.data = pd.read_csv(data_file)
-        self.name_gender = pd.read_csv(name_gender_file)
+        self.data = pd.read_json('preprocessed_data.json', orient='records')
         self.model = pickle.load(open(model_file, "rb"))
         self.explainer = shap.TreeExplainer(self.model)
-        self.credit = dict(Good="低", Standard="中", Poor="高", Not_Selected="<br>請選擇一名客戶")
-        self.color = dict(
-            Good="#6E94F3", Standard="#FD895F", Poor="#F1616D", Not_Selected="<br>grey"
-        )
-
 
     def process_table_data(self) -> pd.DataFrame:
-        table_data = self.data[
-            [
-                "Customer_ID",
-                "Name",
-                "Age",
-                "Annual_Income",
-                "Outstanding_Debt",
-                "Monthly_Balance",
-            ]
-        ]
-        table_data["Annual_Income"] *= 30
-        table_data["Outstanding_Debt"] *= 30
-        table_data["Monthly_Balance"] *= 30
-        table_data = (
-            table_data.groupby(["Customer_ID", "Name"]).mean().reset_index().round()
-        )
-        table_data["Name"] = self.name_gender["Name"]
-        table_data["Gender"] = self.name_gender["Gender"]
+        table_cols = ["Customer_ID","Name","Age","Gender","Occupation","Annual_Income","Outstanding_Debt","Monthly_Balance"]
+        table_data = self.data[table_cols]
         table_data.columns = [self.col_translate[col] for col in table_data.columns]
         return table_data
 
@@ -80,7 +57,7 @@ class CreditPredictor:
         )
         options.configure_selection("single")
         selection = AgGrid(
-            df.round(),
+            df,
             gridOptions=options.build(),
             enable_enterprise_modules=True,
             columns_auto_size_mode=ColumnsAutoSizeMode.FIT_ALL_COLUMNS_TO_VIEW,
@@ -105,6 +82,8 @@ class CreditPredictor:
         return selected_data, score
 
     def display_credit_score_view(self, score: str) -> None:
+        credit = dict(Good="低", Standard="中", Poor="高", Not_Selected="<br>請選擇一名客戶")
+        color = dict(Good="#6E94F3", Standard="#FD895F", Poor="#F1616D", Not_Selected="<br>grey")
         style = """
         <style>
             .container { 
@@ -126,7 +105,7 @@ class CreditPredictor:
         {style}
         <div class="container">
             <h1 class="vertical-center" style='text-align: center; color: grey;'>
-            信用風險:<font style='color: {self.color[score]};'> {self.credit[score]}</font></h1>
+            信用風險:<font style='color: {color[score]};'> {credit[score]}</font></h1>
         </div>
         """,
             unsafe_allow_html=True,
@@ -142,30 +121,8 @@ class CreditPredictor:
             "High_spent_Large_value_payments": "高單價高頻消費",
         }
 
-        career = {
-            "Scientist": "科學家",
-            "Teacher": "老師",
-            "Engineer": "工程師",
-            "Entrepreneur": "企業家",
-            "Developer": "軟體工程師",
-            "Lawyer": "律師",
-            "Media_Manager": "媒體經理",
-            "Doctor": "醫生",
-            "Journalist": "記者",
-            "Manager": "經理",
-            "Accountant": "會計師",
-            "Musician": "音樂家",
-            "Mechanic": "技工",
-            "Writer": "作家",
-            "Architect": "建築師",
-        }
-
         selected_user_id = selection["selected_rows"][0]["客戶編號"]
         text = "#### 該客戶的財務相關資訊：\n"
-        occupation = self.data.loc[
-            self.data["Customer_ID"] == selected_user_id, "Occupation"
-        ].values[0]
-        text += f"- 職業: {career[occupation]}\n"
         Payment_Behaviour = self.data.loc[
             self.data["Customer_ID"] == selected_user_id, "Payment_Behaviour"
         ].values[0]
@@ -173,15 +130,14 @@ class CreditPredictor:
         selected_data = self.data.loc[
             self.data["Customer_ID"] == selected_user_id, self.predict_col
         ].head(1)
-        selected_data["Annual_Income"] *= 30
-        selected_data["Outstanding_Debt"] *= 30
-        selected_data["Monthly_Balance"] *= 30
-        selected_data["Monthly_Inhand_Salary"] *= 30
         selected_data.columns = [
             self.col_translate[col] for col in selected_data.columns
         ]
         for i in selected_data.columns:
-            text += f"- {i}: {int(selected_data[i].values[0])}\n"
+            if i == "信貸最高利息":
+                text += f"- {i}: {int(selected_data[i].values[0])} %\n"
+            else:
+                text += f"- {i}: {int(selected_data[i].values[0])}\n"
         st.markdown(text)
 
     def display_credit_risk_factor_chart(

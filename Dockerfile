@@ -19,8 +19,7 @@ RUN pip3 install -r requirements.txt
 
 COPY .streamlit/config.toml .streamlit/config.toml
 COPY model.pkl .
-COPY train.csv .
-COPY name_gender.csv .
+COPY preprocessed_data.json .
 
 EXPOSE 8501
 
