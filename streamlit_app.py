@@ -31,7 +31,7 @@ class CreditPredictor:
         "Num_Credit_Card": "信用卡張數",
         "Interest_Rate": "信貸最高利息",
         "Num_of_Loan": "貸款數量",
-        "Delay_from_due_date": "平均延遲還款天數",
+        "Delay_from_due_date": "延遲還款天數",
         "Num_of_Delayed_Payment": "延遲還款次數",
         "Outstanding_Debt": "未償債務",
         "Credit_History_Age": "信用紀錄月數",

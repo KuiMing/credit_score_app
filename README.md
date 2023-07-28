@@ -41,7 +41,7 @@
 |Num_of_Loan | 貸款數量 | 該會員借貸的數量 |
 |Outstanding_Debt | 未償債務 | 該會員尚未償還的債務金額總和 |
 |Credit_History_Age | 信用紀錄月數 | 該會員使用信用的月份數量 |
-|Delay_from_due_date | 平均延遲還款天數 | 平均該會員延遲幾天還款 |
+|Delay_from_due_date | 延遲還款天數 | 平均該會員延遲幾天還款 |
 |Num_of_Delayed_Payment | 延遲還款次數 | 該會員延遲還款的次數 |
 |Monthly_Balance | 每月結餘 | 該會員每月的結餘金額 |
 
