@@ -22,7 +22,7 @@
 
 
 ## 預處理後的資料：
-- https://drive.google.com/file/d/10bgv3i5C6nccewhvZXOieD4LHSBkdBKM/view?usp=sharing
+- https://drive.google.com/file/d/10nn7zd27pQ4VsWlOEQmuzdPVt82abbIg/view?usp=drivesdk
 
 ### 資料說明：
 | 資料欄位 | 欄位名稱 | 欄位解釋 |
