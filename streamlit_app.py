@@ -40,13 +40,22 @@ class CreditPredictor:
         "Payment_Behaviour": "付款行為",
     }
 
-    def __init__(self, data_file: str, model_file: str, name_gender_file: str):
-        self.data = pd.read_json('preprocessed_data.json', orient='records')
+    def __init__(self, data_file: str, model_file: str):
+        self.data = pd.read_json(data_file, orient="records")
         self.model = pickle.load(open(model_file, "rb"))
         self.explainer = shap.TreeExplainer(self.model)
 
     def process_table_data(self) -> pd.DataFrame:
-        table_cols = ["Customer_ID","Name","Age","Gender","Occupation","Annual_Income","Outstanding_Debt","Monthly_Balance"]
+        table_cols = [
+            "Customer_ID",
+            "Name",
+            "Age",
+            "Gender",
+            "Occupation",
+            "Annual_Income",
+            "Outstanding_Debt",
+            "Monthly_Balance",
+        ]
         table_data = self.data[table_cols]
         table_data.columns = [self.col_translate[col] for col in table_data.columns]
         return table_data
@@ -83,7 +92,9 @@ class CreditPredictor:
 
     def display_credit_score_view(self, score: str) -> None:
         credit = dict(Good="低", Standard="中", Poor="高", Not_Selected="<br>請選擇一名客戶")
-        color = dict(Good="#6E94F3", Standard="#FD895F", Poor="#F1616D", Not_Selected="<br>grey")
+        color = dict(
+            Good="#6E94F3", Standard="#FD895F", Poor="#F1616D", Not_Selected="<br>grey"
+        )
         style = """
         <style>
             .container { 
@@ -188,7 +199,7 @@ class CreditPredictor:
 
 
 def main() -> None:
-    predictor = CreditPredictor("train.csv", "model.pkl", "name_gender.csv")
+    predictor = CreditPredictor("preprocessed_data.json", "model.pkl")
 
     st.set_page_config(layout="wide")
 
