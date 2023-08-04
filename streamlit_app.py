@@ -4,6 +4,11 @@ import streamlit as st
 from st_aggrid import AgGrid, GridOptionsBuilder, ColumnsAutoSizeMode, AgGridReturn
 import pickle
 import shap
+import dalex as dx
+
+
+def predict_good(model, newdata):
+    return model.predict_proba(newdata)[:, 0]
 
 
 class CreditPredictor:
@@ -38,12 +43,20 @@ class CreditPredictor:
         "Monthly_Balance": "每月結餘",
         "Occupation": "職業",
         "Payment_Behaviour": "付款行為",
+        "intercept": "起始點",
+        "prediction": "整體情況",
     }
 
     def __init__(self, data_file: str, model_file: str):
         self.data = pd.read_json(data_file, orient="records")
         self.model = pickle.load(open(model_file, "rb"))
-        self.explainer = shap.TreeExplainer(self.model)
+        # self.explainer = shap.TreeExplainer(self.model)
+        self.explainer_good = dx.Explainer(
+            self.model,
+            self.data[self.predict_col],
+            predict_function=predict_good,
+            verbose=0,
+        )
 
     def process_table_data(self) -> pd.DataFrame:
         table_cols = [
@@ -197,6 +210,39 @@ class CreditPredictor:
         )
         st.altair_chart(chart, use_container_width=True)
 
+    def display_breakdown(self, selected_data: pd.DataFrame) -> None:
+        result = self.explainer_good.predict_parts(selected_data, type="break_down")
+        _label = result.result["variable_name"].tolist()
+        _label[_label.index("")] = "prediction"
+        result.result["variable"] = _label
+        result.result["variable"] = [
+            self.col_translate[col] for col in result.result.variable
+        ]
+        result.result["label"] = ""
+        fig = result.plot(
+            show=False, max_vars=12, vcolors=["RebeccaPurple", "#6E94F3", "#F1616D"]
+        )
+        fig.layout["annotations"][0]["text"] = ""
+        fig.update_annotations(visible=False)
+        fig.update_layout(
+            title="",
+            height=400,
+            font_size=16,
+            font_color="black",
+            paper_bgcolor="rgba(0,0,0,0)",
+            plot_bgcolor="rgba(0,0,0,0)",
+            margin=dict(l=10, r=10, b=10, t=10, pad=10),
+        )
+        fig.update_xaxes(gridcolor="#E1E1E1")
+        fig.update_yaxes(gridcolor="#E1E1E1")
+        st.markdown(
+            """            
+                <h4> 各因子對信用風險的影響分析：<font style="color: #6E94F3;">正面影響</font> <font style="color: #F1616D;">負面影響</font></h4>
+                """,
+            unsafe_allow_html=True,
+        )
+        st.plotly_chart(fig, use_container_width=True)
+
 
 def main() -> None:
     predictor = CreditPredictor("preprocessed_data.json", "model.pkl")
@@ -227,7 +273,8 @@ def main() -> None:
 
     with score_sorting:
         if selection.selected_rows != []:
-            predictor.display_credit_risk_factor_chart(selected_data, score)
+            # predictor.display_credit_risk_factor_chart(selected_data, score)
+            predictor.display_breakdown(selected_data)
 
 
 if __name__ == "__main__":
