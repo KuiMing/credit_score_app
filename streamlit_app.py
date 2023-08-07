@@ -145,24 +145,45 @@ class CreditPredictor:
             "High_spent_Large_value_payments": "高單價高頻消費",
         }
 
-        selected_user_id = selection["selected_rows"][0]["客戶編號"]
         text = "#### 該客戶的財務相關資訊：\n"
+        st.markdown(text)
+
+        variable_list = []
+        value_list = []
+        selected_user_id = selection["selected_rows"][0]["客戶編號"]
+        
         Payment_Behaviour = self.data.loc[
             self.data["Customer_ID"] == selected_user_id, "Payment_Behaviour"
         ].values[0]
-        text += f"- 消費習慣: {behavior[Payment_Behaviour]}\n"
+        variable_list.append("消費習慣")
+        value_list.append(behavior[Payment_Behaviour])
+
         selected_data = self.data.loc[
             self.data["Customer_ID"] == selected_user_id, self.predict_col
         ].head(1)
         selected_data.columns = [
             self.col_translate[col] for col in selected_data.columns
         ]
-        for i in selected_data.columns:
-            if i == "信貸最高利息":
-                text += f"- {i}: {int(selected_data[i].values[0])} %\n"
+        for col in selected_data.columns:
+            if col == "信貸最高利息":
+                variable_list.append(col)
+                value_list.append(str(int(selected_data[col].values[0]))+ " %")
             else:
-                text += f"- {i}: {int(selected_data[i].values[0])}\n"
-        st.markdown(text)
+                variable_list.append(col)
+                value_list.append(str(int(selected_data[col].values[0])))
+        df_to_show = pd.DataFrame({"欄位":variable_list,"數值":value_list})
+        edited_df = st.data_editor(df_to_show, width=350)
+
+        # make breakdown dataframe
+        breakdown_dict = {}
+        for col in self.predict_col:
+            if col == "Interest_Rate":
+                breakdown_dict[col] = int(edited_df.loc[edited_df["欄位"] == self.col_translate[col],"數值"].values[0].replace(' %',''))
+            else:
+                breakdown_dict[col] = edited_df.loc[edited_df["欄位"] == self.col_translate[col],"數值"].values[0]
+        df_breakdown = pd.DataFrame(breakdown_dict, index=[0])
+        return df_breakdown
+        
 
     def display_credit_risk_factor_chart(
         self, selected_data: pd.DataFrame, score: str
@@ -269,12 +290,12 @@ def main() -> None:
 
     with user_detail:
         if selection.selected_rows != []:
-            predictor.display_user_detail(selection)
+            df_breakdown = predictor.display_user_detail(selection)
 
     with score_sorting:
         if selection.selected_rows != []:
             # predictor.display_credit_risk_factor_chart(selected_data, score)
-            predictor.display_breakdown(selected_data)
+            predictor.display_breakdown(df_breakdown)
 
 
 if __name__ == "__main__":
