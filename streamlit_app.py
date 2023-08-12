@@ -151,7 +151,7 @@ class CreditPredictor:
         variable_list = []
         value_list = []
         selected_user_id = selection["selected_rows"][0]["客戶編號"]
-        
+
         Payment_Behaviour = self.data.loc[
             self.data["Customer_ID"] == selected_user_id, "Payment_Behaviour"
         ].values[0]
@@ -167,23 +167,28 @@ class CreditPredictor:
         for col in selected_data.columns:
             if col == "信貸最高利息":
                 variable_list.append(col)
-                value_list.append(str(int(selected_data[col].values[0]))+ " %")
+                value_list.append(str(int(selected_data[col].values[0])) + " %")
             else:
                 variable_list.append(col)
                 value_list.append(str(int(selected_data[col].values[0])))
-        df_to_show = pd.DataFrame({"欄位":variable_list,"數值":value_list})
+        df_to_show = pd.DataFrame({"欄位": variable_list, "數值": value_list})
         edited_df = st.data_editor(df_to_show, width=350)
 
         # make breakdown dataframe
         breakdown_dict = {}
         for col in self.predict_col:
             if col == "Interest_Rate":
-                breakdown_dict[col] = int(edited_df.loc[edited_df["欄位"] == self.col_translate[col],"數值"].values[0].replace(' %',''))
+                breakdown_dict[col] = int(
+                    edited_df.loc[edited_df["欄位"] == self.col_translate[col], "數值"]
+                    .values[0]
+                    .replace(" %", "")
+                )
             else:
-                breakdown_dict[col] = edited_df.loc[edited_df["欄位"] == self.col_translate[col],"數值"].values[0]
+                breakdown_dict[col] = edited_df.loc[
+                    edited_df["欄位"] == self.col_translate[col], "數值"
+                ].values[0]
         df_breakdown = pd.DataFrame(breakdown_dict, index=[0])
         return df_breakdown
-        
 
     def display_credit_risk_factor_chart(
         self, selected_data: pd.DataFrame, score: str
@@ -231,8 +236,22 @@ class CreditPredictor:
         )
         st.altair_chart(chart, use_container_width=True)
 
+    def sort_contribution(self, df):
+        df.loc[0, "contribution"] = 1e100
+        df.loc[len(df) - 1, "contribution"] = -1e100
+        df.sort_values(by="contribution", inplace=True, ascending=False)
+        df.loc[0, "contribution"] = df.loc[0, "cumulative"]
+        df.loc[len(df) - 1, "contribution"] = df.loc[len(df) - 1, "cumulative"]
+        df.loc[0 : len(df) - 1, "cumulative"] = df.contribution[
+            0 : len(df) - 1
+        ].cumsum()
+        df.reset_index(drop=True, inplace=True)
+        df.loc[len(df) - 1, "cumulative"] = df.loc[len(df) - 2, "cumulative"]
+        return df
+
     def display_breakdown(self, selected_data: pd.DataFrame) -> None:
         result = self.explainer_good.predict_parts(selected_data, type="break_down")
+        result.result = self.sort_contribution(result.result)
         _label = result.result["variable_name"].tolist()
         _label[_label.index("")] = "prediction"
         result.result["variable"] = _label
