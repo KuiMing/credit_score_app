@@ -34,7 +34,7 @@ class CreditPredictor:
         "Monthly_Inhand_Salary": "月薪",
         "Num_Bank_Accounts": "銀行帳戶數",
         "Num_Credit_Card": "信用卡張數",
-        "Interest_Rate": "信貸最高利息",
+        "Interest_Rate": "信貸最高利息%",
         "Num_of_Loan": "貸款數量",
         "Delay_from_due_date": "延遲還款天數",
         "Num_of_Delayed_Payment": "延遲還款次數",
@@ -46,10 +46,15 @@ class CreditPredictor:
         "intercept": "起始點",
         "prediction": "整體情況",
     }
+    credit = dict(Good="低", Standard="中", Poor="高", Not_Selected="<br>請選擇一名客戶")
+    color = dict(
+        Good="#6E94F3", Standard="#FD895F", Poor="#F1616D", Not_Selected="<br>grey"
+    )
 
     def __init__(self, data_file: str, model_file: str):
         self.data = pd.read_json(data_file, orient="records")
         self.model = pickle.load(open(model_file, "rb"))
+        print("model")
         # self.explainer = shap.TreeExplainer(self.model)
         self.explainer_good = dx.Explainer(
             self.model,
@@ -104,10 +109,6 @@ class CreditPredictor:
         return selected_data, score
 
     def display_credit_score_view(self, score: str) -> None:
-        credit = dict(Good="低", Standard="中", Poor="高", Not_Selected="<br>請選擇一名客戶")
-        color = dict(
-            Good="#6E94F3", Standard="#FD895F", Poor="#F1616D", Not_Selected="<br>grey"
-        )
         style = """
         <style>
             .container { 
@@ -129,34 +130,17 @@ class CreditPredictor:
         {style}
         <div class="container">
             <h1 class="vertical-center" style='text-align: center; color: grey;'>
-            信用風險:<font style='color: {color[score]};'> {credit[score]}</font></h1>
+            信用風險:<font style='color: {self.color[score]};'> {self.credit[score]}</font></h1>
         </div>
         """,
             unsafe_allow_html=True,
         )
 
     def display_user_detail(self, selection: AgGridReturn) -> None:
-        behavior = {
-            "High_spent_Small_value_payments": "低單價高頻消費",
-            "Low_spent_Large_value_payments": "高單價低頻消費",
-            "Low_spent_Medium_value_payments": "中單價低頻消費",
-            "Low_spent_Small_value_payments": "低單價低頻消費",
-            "High_spent_Medium_value_payments": "中單價高頻消費",
-            "High_spent_Large_value_payments": "高單價高頻消費",
-        }
-
         text = "#### 該客戶的財務相關資訊：\n"
         st.markdown(text)
 
-        variable_list = []
-        value_list = []
         selected_user_id = selection["selected_rows"][0]["客戶編號"]
-
-        Payment_Behaviour = self.data.loc[
-            self.data["Customer_ID"] == selected_user_id, "Payment_Behaviour"
-        ].values[0]
-        variable_list.append("消費習慣")
-        value_list.append(behavior[Payment_Behaviour])
 
         selected_data = self.data.loc[
             self.data["Customer_ID"] == selected_user_id, self.predict_col
@@ -164,30 +148,18 @@ class CreditPredictor:
         selected_data.columns = [
             self.col_translate[col] for col in selected_data.columns
         ]
-        for col in selected_data.columns:
-            if col == "信貸最高利息":
-                variable_list.append(col)
-                value_list.append(str(int(selected_data[col].values[0])) + " %")
-            else:
-                variable_list.append(col)
-                value_list.append(str(int(selected_data[col].values[0])))
-        df_to_show = pd.DataFrame({"欄位": variable_list, "數值": value_list})
-        edited_df = st.data_editor(df_to_show, width=350)
+
+        df_to_show = pd.DataFrame(
+            {"欄位": selected_data.columns, "數值": selected_data.values[0].tolist()}
+        )
+        edited_df = st.data_editor(df_to_show, width=350, height=430, hide_index=True)
 
         # make breakdown dataframe
-        breakdown_dict = {}
-        for col in self.predict_col:
-            if col == "Interest_Rate":
-                breakdown_dict[col] = int(
-                    edited_df.loc[edited_df["欄位"] == self.col_translate[col], "數值"]
-                    .values[0]
-                    .replace(" %", "")
-                )
-            else:
-                breakdown_dict[col] = edited_df.loc[
-                    edited_df["欄位"] == self.col_translate[col], "數值"
-                ].values[0]
-        df_breakdown = pd.DataFrame(breakdown_dict, index=[0])
+
+        df_breakdown = (
+            pd.Series(edited_df["數值"].values, index=edited_df["欄位"]).to_frame().T
+        )
+
         return df_breakdown
 
     def display_credit_risk_factor_chart(
@@ -275,9 +247,11 @@ class CreditPredictor:
         )
         fig.update_xaxes(gridcolor="#E1E1E1")
         fig.update_yaxes(gridcolor="#E1E1E1")
+        score = self.model.predict(selected_data.to_numpy())[0]
         st.markdown(
-            """            
+            f"""            
                 <h4> 各因子對信用風險的影響分析：<font style="color: #6E94F3;">正面影響</font> <font style="color: #F1616D;">負面影響</font></h4>
+                <h4> 調整後的信用風險:<font style='color: {self.color[score]};'> {self.credit[score]}</font></font></h4>
                 """,
             unsafe_allow_html=True,
         )
@@ -313,7 +287,6 @@ def main() -> None:
 
     with score_sorting:
         if selection.selected_rows != []:
-            # predictor.display_credit_risk_factor_chart(selected_data, score)
             predictor.display_breakdown(df_breakdown)
 
 
