@@ -1,3 +1,7 @@
+import warnings
+
+warnings.filterwarnings("ignore")
+
 import altair as alt
 import pandas as pd
 import streamlit as st
@@ -54,7 +58,6 @@ class CreditPredictor:
     def __init__(self, data_file: str, model_file: str):
         self.data = pd.read_json(data_file, orient="records")
         self.model = pickle.load(open(model_file, "rb"))
-        print("model")
         # self.explainer = shap.TreeExplainer(self.model)
         self.explainer_good = dx.Explainer(
             self.model,
@@ -208,7 +211,7 @@ class CreditPredictor:
         )
         st.altair_chart(chart, use_container_width=True)
 
-    def sort_contribution(self, df):
+    def sort_contribution(self, df: pd.DataFrame) -> pd.DataFrame:
         df.loc[0, "contribution"] = 1e100
         df.loc[len(df) - 1, "contribution"] = -1e100
         df.sort_values(by="contribution", inplace=True, ascending=False)
