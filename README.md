@@ -3,7 +3,7 @@
 - 背景設定：
     - 這是一個財務諮詢公司的專案，旨在為會員提供諮詢服務，而信用風險評級是其財務諮詢的核心服務項目之一。
     - 藉由會員的目前財務情況，透過財務公司利用 Tukey 平台開發的人工智慧，衡量會員信用風險評級、貸款的能力好壞，並提供改善信用風險的建議。
-- 說明影片：https://youtu.be/CSWmDkJlgCw
+- 說明影片：https://youtu.be/fQZZysarNMM
 - 資料：
     - 來源：https://statso.io/credit-score-classification-case-study/
     - 姓名、性別：https://github.com/cyy0523xc/chinese-name-gender-analyse
